@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>TinyMCE 7 MathJax Plugin Test (Offline)</title>
+        <!-- Use only local files - completely offline -->
+        <script src="./node_modules/tinymce/tinymce.min.js"></script>
+        <script src="config.js"></script>
+        <script src="plugin.min.js"></script>
+        <script
+            id="MathJax-script"
+            async
+            src="./node_modules/mathjax/es5/tex-mml-chtml.js"></script>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 20px;
+            }
+            .editor-container {
+                margin: 20px 0;
+            }
+            .output {
+                margin-top: 20px;
+                padding: 15px;
+                background-color: #f5f5f5;
+                border-radius: 5px;
+            }
+            .note {
+                background-color: #d4edda;
+                border: 1px solid #c3e6cb;
+                border-radius: 5px;
+                padding: 10px;
+                margin: 10px 0;
+            }
+            .warning {
+                background-color: #fff3cd;
+                border: 1px solid #ffeaa7;
+                border-radius: 5px;
+                padding: 10px;
+                margin: 10px 0;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>TinyMCE 7 MathJax Plugin Test (Offline)</h1>
+
+        <div class="note">
+            <strong>Offline Testing:</strong> This test page uses only local files from your
+            <code>node_modules</code> directory. No internet connection required!
+        </div>
+
+        <div class="warning">
+            <strong>Setup Required:</strong> Make sure you have the dependencies installed by
+            running: <code>npm run setup</code>
+        </div>
+
+        <div class="editor-container">
+            <h3>Editor:</h3>
+            <textarea id="editor">
+            <p>This is a test of the MathJax plugin for TinyMCE 7 using only local files.</p>
+            <p>Click the Σ button to insert mathematical expressions.</p>
+            <p>Example: <span class="math-tex" data-latex="\( x^2 + y^2 = z^2 \)" contenteditable="false" style="cursor: pointer;"><span class="math-tex-original">\( x^2 + y^2 = z^2 \)</span><span class="dummy" hidden="hidden">dummy</span></span></p>
+            </textarea>
+        </div>
+
+        <div class="output">
+            <h3>Output HTML:</h3>
+            <pre id="output"></pre>
+        </div>
+
+        <script>
+            tinymce.init({
+                selector: "#editor",
+                plugins: "mathjax", // Now we can include it since it's loaded directly
+                toolbar: "mathjax",
+                mathjax: {
+                    lib: "./node_modules/mathjax/es5/tex-mml-chtml.js",
+                    symbols: { start: "\\(", end: "\\)" },
+                    className: "math-tex",
+                    configUrl: "config.js",
+                },
+                height: 400,
+                setup: function (editor) {
+                    editor.on("GetContent", function (e) {
+                        document.getElementById("output").textContent = e.content;
+                    });
+                },
+            });
+        </script>
+    </body>
+</html>
