@@ -5,6 +5,8 @@ tinymce.PluginManager.add("mathjax", function (editor, url) {
     const tempClassName = className + "-original";
     const mathjaxUrl = settings.lib;
     const configUrl = settings.configUrl || `${url}/config.js`;
+    const regex_simple = /\$([^$]+)\$/g;
+    const regex_complex = /\$\$([^$]+)\$\$/g;
 
     // Build script URLs
     const scriptUrls = [configUrl];
@@ -102,21 +104,15 @@ tinymce.PluginManager.add("mathjax", function (editor, url) {
      * @param {string} content
      */
     const rewriteLatexFormulas = (content) => {
-        const regexes_complex = [/\$\$([^$]+)\$\$/g];
-        regexes_complex.forEach((regex) => {
-            content = content.replace(
-                regex,
-                "<span class='math-tex' data-latex='\\[$1\\]' contenteditable='false' style='cursor: pointer;'><span class='math-tex-original'>\\[$1\\]</span><span class='dummy' hidden='hidden'>dummy</span></span>"
-            );
-        });
+        content = content.replace(
+            regex_complex,
+            "<span class='math-tex' data-latex='\\[$1\\]' contenteditable='false' style='cursor: pointer;'><span class='math-tex-original'>\\[$1\\]</span><span class='dummy' hidden='hidden'>dummy</span></span>"
+        );
 
-        const regexes_simple = [/\$([^$]+)\$/g];
-        regexes_simple.forEach((regex) => {
-            content = content.replace(
-                regex,
-                "<span class='math-tex' data-latex='\\($1\\)' contenteditable='false' style='cursor: pointer;'><span class='math-tex-original'>\\($1\\)</span><span class='dummy' hidden='hidden'>dummy</span></span>"
-            );
-        });
+        content = content.replace(
+            regex_simple,
+            "<span class='math-tex' data-latex='\\($1\\)' contenteditable='false' style='cursor: pointer;'><span class='math-tex-original'>\\($1\\)</span><span class='dummy' hidden='hidden'>dummy</span></span>"
+        );
 
         return content;
     };
