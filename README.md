@@ -3,9 +3,11 @@
 <span class="badge-patreon"><a href="https://www.patreon.com/dimakorotkov" title="Donate to this project using Patreon"><img src="https://img.shields.io/badge/patreon-donate-yellow.svg" alt="Patreon donate button" /></a></span>
 <span><a href="https://buymeacoff.ee/NXR1ZkP" title="Donate to this project using Buy Me A Coffee" rel="nofollow"><img src="https://img.shields.io/badge/buy%20me%20a%20coffee-donate-yellow.svg" alt="Buy Me A Coffee donate button"></a></span>
 
-This plugin using [MathJax](https://www.mathjax.org) library for rendering math font.
+This plugin uses [MathJax](https://www.mathjax.org) library for rendering math formulas in TinyMCE.
 
 This plugin is compatible with **TinyMCE 7** and MathJax 3.
+
+**Note:** This plugin only renders existing MathJax formulas. It does not provide editing functionality - formulas must be added to the content as HTML with the appropriate `data-latex` attributes.
 
 ## Install
 
@@ -73,13 +75,13 @@ To test the plugin locally:
 4. **Open test files:**
     - `http://localhost:8000/test.html` - Uses local TinyMCE, CDN MathJax
     - `http://localhost:8000/test-local.html` - Uses both TinyMCE and MathJax locally
-    - `http://localhost:8000/test-offline.html` - Completely offline (no internet required)
+    - `http://localhost:8000/test-mathjax.html` - MathJax configuration test
 
 ## Usage
 
 ### TinyMCE editor
 
-Configure your TinyMCE init settings by adding the plugin script and usage of `mathjax`:
+Configure your TinyMCE init settings by adding the plugin script:
 
 ```html
 <!-- Include the plugin script directly -->
@@ -90,15 +92,30 @@ Configure your TinyMCE init settings by adding the plugin script and usage of `m
 tinymce.init({
   ...
   plugins: 'mathjax',  // Include in plugins list since script is loaded directly
-  toolbar: 'mathjax',
   mathjax: {
     lib: '/path-to-mathjax/es5/tex-mml-chtml.js', //required path to mathjax
-    //symbols: {start: '\\(', end: '\\)'}, //optional: mathjax symbols
     //className: "math-tex", //optional: mathjax element class
     //configUrl: '/your-path-to-plugin/@dimakorotkov/tinymce-mathjax/config.js' //optional: mathjax config js
   }
 });
 ```
+
+### MathJax Formula Format
+
+The plugin expects MathJax formulas to be in the following HTML format:
+
+```html
+<span
+    class="math-tex"
+    data-latex="\\( x^2 + y^2 = z^2 \\)"
+    contenteditable="false"
+    style="cursor: default;">
+    <span class="math-tex-original">\\( x^2 + y^2 = z^2 \\)</span>
+    <span class="dummy" hidden="hidden">dummy</span>
+</span>
+```
+
+The `data-latex` attribute should contain the LaTeX formula with the appropriate delimiters (e.g., `\\(` and `\\)` for inline math).
 
 ### View
 
@@ -128,7 +145,7 @@ If you're upgrading from TinyMCE 5 to TinyMCE 7, this plugin has been updated to
 
 -   Updated plugin structure for TinyMCE 7
 -   Improved error handling and null checks
--   Updated dialog window configuration
+-   Removed editing functionality - now only renders existing formulas
 -   Enhanced compatibility with modern JavaScript standards
 
 ## License - MIT

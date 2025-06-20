@@ -62,13 +62,18 @@
             <textarea id="editor">
             <p>This is a test of the MathJax plugin for TinyMCE 7 using only local files.</p>
             <p>Click the Σ button to insert mathematical expressions.</p>
-            <p>Example: <span class="math-tex" data-latex="\( x^2 + y^2 = z^2 \)" contenteditable="false" style="cursor: pointer;"><span class="math-tex-original">\( x^2 + y^2 = z^2 \)</span><span class="dummy" hidden="hidden">dummy</span></span></p>
-            </textarea>
-        </div>
+            <p>Example: 
+                <span class="math-tex" data-latex="\( x^2 + y^2 = z^2 \)" contenteditable="false" style="cursor: pointer;"><span class="math-tex-original">\( x^2 + y^2 = z^2 \)</span><span class="dummy" hidden="hidden">dummy</span></span>
+            </p>
 
-        <div class="output">
-            <h3>Output HTML:</h3>
-            <pre id="output"></pre>
+            <p>
+                Example #2: $ \alpha $
+            </p>
+
+            <p>Complex example:
+                $$ \frac{d}{dx} \left( \int_{0}^{x} f(t) dt \right) = f(x) $$
+            </p>
+            </textarea>
         </div>
 
         <script>
@@ -83,11 +88,6 @@
                     configUrl: "config.js",
                 },
                 height: 400,
-                setup: function (editor) {
-                    editor.on("GetContent", function (e) {
-                        document.getElementById("output").textContent = e.content;
-                    });
-                },
             });
         </script>
     </body>

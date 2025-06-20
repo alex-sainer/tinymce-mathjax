@@ -29,8 +29,8 @@
 
         <div class="test-math">
             <h3>Inline Math Test:</h3>
-            <p>This is an inline equation: <span class="math-tex">\( x^2 + y^2 = z^2 \)</span></p>
-            <p>Another inline equation: <span class="math-tex">\( E = mc^2 \)</span></p>
+            <p>This is an inline equation: <span class="math-tex">$ x^2 + y^2 = z^2 $</span></p>
+            <p>Another inline equation: <span class="math-tex">$ E = mc^2 $</span></p>
         </div>
 
         <div class="test-math">
@@ -48,23 +48,23 @@
         </div>
 
         <script>
-            // Wait for MathJax to be ready and then typeset
-            function waitForMathJax() {
+            const waitForMathJax = () => {
                 return new Promise((resolve) => {
-                    if (window.MathJax && window.MathJax.typesetPromise) {
+                    if (window.MathJax?.typesetPromise) {
                         resolve();
-                    } else {
-                        const checkMathJax = () => {
-                            if (window.MathJax && window.MathJax.typesetPromise) {
-                                resolve();
-                            } else {
-                                setTimeout(checkMathJax, 100);
-                            }
-                        };
-                        checkMathJax();
+                        return;
                     }
+
+                    const checkMathJax = () => {
+                        if (window.MathJax?.typesetPromise) {
+                            resolve();
+                        } else {
+                            setTimeout(checkMathJax, 100);
+                        }
+                    };
+                    checkMathJax();
                 });
-            }
+            };
 
             waitForMathJax().then(() => {
                 console.log("MathJax is ready, typesetting...");

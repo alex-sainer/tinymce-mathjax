@@ -1,322 +1,161 @@
 tinymce.PluginManager.add("mathjax", function (editor, url) {
-    // plugin configuration options
-    let settings = editor.getParam("mathjax");
-    let mathjaxClassName = settings.className || "math-tex";
-    let mathjaxTempClassName = mathjaxClassName + "-original";
-    let mathjaxSymbols = settings.symbols || { start: "\\(", end: "\\)" };
-    let mathjaxUrl = settings.lib || null;
-    let mathjaxConfigUrl = settings.configUrl || url + "/config.js";
+    // Configuration
+    const settings = editor.getParam("mathjax") || {};
+    const className = settings.className || "math-tex";
+    const tempClassName = className + "-original";
+    const mathjaxUrl = settings.lib;
+    const configUrl = settings.configUrl || `${url}/config.js`;
+
+    // Build script URLs
+    const scriptUrls = [configUrl];
     if (settings.className) {
-        mathjaxConfigUrl += "?class=" + settings.className;
+        scriptUrls[0] += `?class=${settings.className}`;
     }
-    let mathjaxScripts = [mathjaxConfigUrl];
     if (mathjaxUrl) {
-        mathjaxScripts.push(mathjaxUrl);
+        scriptUrls.push(mathjaxUrl);
     }
 
-    // Function to wait for MathJax to be ready
-    let waitForMathJax = function () {
+    // Utility functions
+    const waitForMathJax = () => {
         return new Promise((resolve) => {
-            if (window.MathJax && window.MathJax.typesetPromise) {
+            if (window.MathJax?.typesetPromise) {
                 resolve();
-            } else {
-                const checkMathJax = () => {
-                    if (window.MathJax && window.MathJax.typesetPromise) {
-                        resolve();
-                    } else {
-                        setTimeout(checkMathJax, 100);
-                        console.log("MathJax is not ready");
-                    }
-                };
-                checkMathJax();
+                return;
             }
-        });
-    };
 
-    // load mathjax and its config on editor init
-    editor.on("init", function () {
-        let scripts = editor.getDoc().getElementsByTagName("script");
-        for (let i = 0; i < mathjaxScripts.length; i++) {
-            // check if script have already loaded
-            let id = editor.dom.uniqueId();
-            let script = editor.dom.create("script", {
-                id: id,
-                type: "text/javascript",
-                src: mathjaxScripts[i],
-            });
-            let found = false;
-            for (let j = 0; j < scripts.length; j++) {
-                if (scripts[j].src == script.src || scripts[j].src == mathjaxScripts[i]) {
-                    found = true;
-                    break;
-                }
-            }
-            // load script
-            if (!found) {
-                editor.getDoc().getElementsByTagName("head")[0].appendChild(script);
-            }
-        }
-
-        // Wait for MathJax to be ready and then typeset
-        waitForMathJax().then(() => {
-            if (editor.getDoc().defaultView.MathJax) {
-                console.log("MathJax is ready");
-                editor.getDoc().defaultView.MathJax.typesetPromise();
-            }
-        });
-    });
-
-    // remove extra tags on get content
-    editor.on("GetContent", function (e) {
-        let div = editor.dom.create("div");
-        div.innerHTML = e.content;
-        let elements = div.querySelectorAll("." + mathjaxClassName);
-        for (let i = 0; i < elements.length; i++) {
-            let children = elements[i].querySelectorAll("span");
-            for (let j = 0; j < children.length; j++) {
-                children[j].remove();
-            }
-            let latex = elements[i].getAttribute("data-latex");
-            elements[i].removeAttribute("contenteditable");
-            elements[i].removeAttribute("style");
-            elements[i].removeAttribute("data-latex");
-            elements[i].innerHTML = latex;
-        }
-        e.content = div.innerHTML;
-    });
-
-    let checkElement = function (element) {
-        if (element.childNodes.length != 2) {
-            element.setAttribute("contenteditable", false);
-            element.style.cursor = "pointer";
-            let latex = element.getAttribute("data-latex") || element.innerHTML;
-            element.setAttribute("data-latex", latex);
-            element.innerHTML = "";
-
-            // Create the math content span with the LaTeX content
-            let math = editor.dom.create("span");
-            math.innerHTML = latex;
-            math.classList.add(mathjaxTempClassName);
-            element.appendChild(math);
-
-            // Create dummy span for structure
-            let dummy = editor.dom.create("span");
-            dummy.classList.add("dummy");
-            dummy.innerHTML = "dummy";
-            dummy.setAttribute("hidden", "hidden");
-            element.appendChild(dummy);
-        }
-    };
-
-    // add dummy tag on set content
-    editor.on("BeforeSetContent", function (e) {
-        let div = editor.dom.create("div");
-        div.innerHTML = e.content;
-        let elements = div.querySelectorAll("." + mathjaxClassName);
-        for (let i = 0; i < elements.length; i++) {
-            checkElement(elements[i]);
-        }
-        e.content = div.innerHTML;
-    });
-
-    // refresh mathjax on set content
-    editor.on("SetContent", function (e) {
-        waitForMathJax().then(() => {
-            if (editor.getDoc().defaultView.MathJax) {
-                editor.getDoc().defaultView.MathJax.typesetPromise();
-            }
-        });
-    });
-
-    // refresh mathjax on any content change
-    editor.on("Change", function (data) {
-        let elements = editor.dom.getRoot().querySelectorAll("." + mathjaxClassName);
-        if (elements.length) {
-            for (let i = 0; i < elements.length; i++) {
-                checkElement(elements[i]);
-            }
-            waitForMathJax().then(() => {
-                if (editor.getDoc().defaultView.MathJax) {
-                    editor.getDoc().defaultView.MathJax.typesetPromise();
-                }
-            });
-        }
-    });
-
-    // add button to tinimce - updated for TinyMCE 7
-    editor.ui.registry.addToggleButton("mathjax", {
-        text: "Σ",
-        tooltip: "Mathjax",
-        onAction: function () {
-            let selected = editor.selection.getNode();
-            let target = undefined;
-            if (selected.classList && selected.classList.contains(mathjaxClassName)) {
-                target = selected;
-            }
-            openMathjaxEditor(target);
-        },
-        onSetup: function (buttonApi) {
-            return editor.selection.selectorChangedWithUnbind(
-                "." + mathjaxClassName,
-                buttonApi.setActive
-            ).unbind;
-        },
-    });
-
-    // handle click on existing
-    editor.on("click", function (e) {
-        let closest = e.target.closest("." + mathjaxClassName);
-        if (closest) {
-            openMathjaxEditor(closest);
-        }
-    });
-
-    // open window with editor - updated for TinyMCE 7
-    let openMathjaxEditor = function (target) {
-        let mathjaxId = editor.id + "_" + editor.dom.uniqueId();
-
-        let latex = "";
-        if (target) {
-            let latex_attribute = target.getAttribute("data-latex");
-            if (
-                latex_attribute &&
-                latex_attribute.length >= (mathjaxSymbols.start + mathjaxSymbols.end).length
-            ) {
-                latex = latex_attribute.substr(
-                    mathjaxSymbols.start.length,
-                    latex_attribute.length - (mathjaxSymbols.start + mathjaxSymbols.end).length
-                );
-            }
-        }
-
-        // get latex for mathjax from simple text
-        let getMathText = function (value, symbols) {
-            if (!symbols) {
-                symbols = mathjaxSymbols;
-            }
-            return symbols.start + " " + value + " " + symbols.end;
-        };
-
-        // refresh latex in mathjax iframe
-        let refreshDialogMathjax = function (latex, iframeId) {
-            let iframe = document.getElementById(iframeId);
-            if (!iframe) return;
-
-            let iframeWindow =
-                iframe.contentWindow || iframe.contentDocument.document || iframe.contentDocument;
-            let iframeDocument = iframeWindow.document;
-            let iframeBody = iframeDocument.getElementsByTagName("body")[0];
-            let MathJax = iframeWindow.MathJax;
-
-            let div = iframeBody.querySelector("div");
-            if (!div) {
-                div = iframeDocument.createElement("div");
-                div.classList.add(mathjaxTempClassName);
-                iframeBody.appendChild(div);
-            }
-            div.innerHTML = getMathText(latex, { start: "$$", end: "$$" });
-
-            // Wait for MathJax to be ready in iframe
-            const waitForIframeMathJax = () => {
-                return new Promise((resolve) => {
-                    if (MathJax && MathJax.typesetPromise) {
-                        resolve();
-                    } else {
-                        const checkMathJax = () => {
-                            if (iframeWindow.MathJax && iframeWindow.MathJax.typesetPromise) {
-                                resolve();
-                            } else {
-                                setTimeout(checkMathJax, 100);
-                            }
-                        };
-                        checkMathJax();
-                    }
-                });
-            };
-
-            waitForIframeMathJax().then(() => {
-                if (iframeWindow.MathJax) {
-                    iframeWindow.MathJax.typesetPromise();
-                }
-            });
-        };
-
-        // show new window - updated for TinyMCE 7
-        editor.windowManager.open({
-            title: "Mathjax",
-            size: "large",
-            body: {
-                type: "panel",
-                items: [
-                    {
-                        type: "textarea",
-                        name: "title",
-                        label: "LaTex",
-                    },
-                    {
-                        type: "htmlpanel",
-                        html: '<div style="text-align:right"><a href="https://wikibooks.org/wiki/LaTeX/Mathematics" target="_blank" style="font-size:small">LaTex</a></div>',
-                    },
-                    {
-                        type: "htmlpanel",
-                        html:
-                            '<iframe id="' +
-                            mathjaxId +
-                            '" style="width: 100%; min-height: 50px;"></iframe>',
-                    },
-                ],
-            },
-            buttons: [{ type: "submit", text: "OK" }],
-            onSubmit: function onsubmit(api) {
-                let value = api.getData().title.trim();
-                if (target) {
-                    target.innerHTML = "";
-                    target.setAttribute("data-latex", getMathText(value));
-                    checkElement(target);
+            const checkMathJax = () => {
+                if (window.MathJax?.typesetPromise) {
+                    resolve();
                 } else {
-                    let newElement = editor.getDoc().createElement("span");
-                    newElement.innerHTML = getMathText(value);
-                    newElement.classList.add(mathjaxClassName);
-                    checkElement(newElement);
-                    editor.insertContent(newElement.outerHTML);
+                    setTimeout(checkMathJax, 100);
                 }
-                waitForMathJax().then(() => {
-                    if (editor.getDoc().defaultView.MathJax) {
-                        editor.getDoc().defaultView.MathJax.typesetPromise();
-                    }
-                });
-                api.close();
-            },
-            onChange: function (api) {
-                var value = api.getData().title.trim();
-                if (value != latex) {
-                    refreshDialogMathjax(value, mathjaxId);
-                    latex = value;
-                }
-            },
-            initialData: { title: latex },
+            };
+            checkMathJax();
         });
+    };
 
-        // add scripts to iframe
-        let iframe = document.getElementById(mathjaxId);
-        if (!iframe) return;
-
-        let iframeWindow =
-            iframe.contentWindow || iframe.contentDocument.document || iframe.contentDocument;
-        let iframeDocument = iframeWindow.document;
-        let iframeHead = iframeDocument.getElementsByTagName("head")[0];
-        let iframeBody = iframeDocument.getElementsByTagName("body")[0];
-
-        refreshDialogMathjax(latex, mathjaxId);
-
-        // add scripts for dialog iframe
-        for (let i = 0; i < mathjaxScripts.length; i++) {
-            let node = iframeWindow.document.createElement("script");
-            node.src = mathjaxScripts[i];
-            node.type = "text/javascript";
-            node.async = false;
-            node.charset = "utf-8";
-            iframeHead.appendChild(node);
+    const typesetMathJax = () => {
+        const mathJax = editor.getDoc().defaultView.MathJax;
+        if (mathJax?.typesetPromise) {
+            mathJax.typesetPromise();
         }
     };
+
+    // Element management
+    const setupMathElement = (element) => {
+        if (element.childNodes.length === 2) return;
+
+        element.setAttribute("contenteditable", "false");
+        element.style.cursor = "default";
+
+        const latex = element.getAttribute("data-latex") || element.innerHTML;
+        element.setAttribute("data-latex", latex);
+        element.innerHTML = "";
+
+        // Create math content span
+        const mathSpan = editor.dom.create("span", {
+            class: tempClassName,
+            innerHTML: latex,
+        });
+        element.appendChild(mathSpan);
+
+        // Create dummy span for structure
+        const dummySpan = editor.dom.create("span", {
+            class: "dummy",
+            innerHTML: "dummy",
+            hidden: "hidden",
+        });
+        element.appendChild(dummySpan);
+    };
+
+    const cleanupMathElement = (element) => {
+        const latex = element.getAttribute("data-latex");
+        element.removeAttribute("contenteditable");
+        element.removeAttribute("style");
+        element.removeAttribute("data-latex");
+        element.innerHTML = latex;
+    };
+
+    // Load MathJax scripts
+    const loadMathJaxScripts = () => {
+        const existingScripts = editor.getDoc().getElementsByTagName("script");
+        const head = editor.getDoc().getElementsByTagName("head")[0];
+
+        scriptUrls.forEach((scriptUrl) => {
+            const isLoaded = Array.from(existingScripts).some(
+                (script) =>
+                    script.src === scriptUrl || script.src.endsWith(scriptUrl.split("/").pop())
+            );
+
+            if (!isLoaded) {
+                const script = editor.dom.create("script", {
+                    type: "text/javascript",
+                    src: scriptUrl,
+                });
+                head.appendChild(script);
+            }
+        });
+    };
+
+    /**
+     * rewrite for example $ \alpha $ to <span class="math-tex" data-latex="\( \alpha \)" contenteditable="false" style="cursor: pointer;"><span class="math-tex-original">\( \alpha \)</span><span class="dummy" hidden="hidden">dummy</span></span>
+     * @param {string} content
+     */
+    const rewriteLatexFormulas = (content) => {
+        const regexes_complex = [/\$\$([^$]+)\$\$/g];
+        regexes_complex.forEach((regex) => {
+            content = content.replace(
+                regex,
+                "<span class='math-tex' data-latex='\\[$1\\]' contenteditable='false' style='cursor: pointer;'><span class='math-tex-original'>\\[$1\\]</span><span class='dummy' hidden='hidden'>dummy</span></span>"
+            );
+        });
+
+        const regexes_simple = [/\$([^$]+)\$/g];
+        regexes_simple.forEach((regex) => {
+            content = content.replace(
+                regex,
+                "<span class='math-tex' data-latex='\\($1\\)' contenteditable='false' style='cursor: pointer;'><span class='math-tex-original'>\\($1\\)</span><span class='dummy' hidden='hidden'>dummy</span></span>"
+            );
+        });
+
+        return content;
+    };
+
+    // Event handlers
+    editor.on("init", () => {
+        loadMathJaxScripts();
+        waitForMathJax().then(typesetMathJax);
+    });
+
+    editor.on("GetContent", (e) => {
+        const div = editor.dom.create("div");
+        div.innerHTML = e.content;
+
+        div.querySelectorAll(`.${className}`).forEach(cleanupMathElement);
+
+        e.content = div.innerHTML;
+    });
+
+    editor.on("BeforeSetContent", (e) => {
+        const div = editor.dom.create("div");
+        div.innerHTML = rewriteLatexFormulas(e.content);
+
+        div.querySelectorAll(`.${className}`).forEach(setupMathElement);
+
+        // TODO: rewrite latex-formulas to "rendered" mathJax-formulas
+
+        e.content = div.innerHTML;
+    });
+
+    editor.on("SetContent", () => {
+        waitForMathJax().then(typesetMathJax);
+    });
+
+    editor.on("Change", () => {
+        const elements = editor.dom.getRoot().querySelectorAll(`.${className}`);
+        if (elements.length === 0) return;
+
+        elements.forEach(setupMathElement);
+        waitForMathJax().then(typesetMathJax);
+    });
 });
