@@ -5,7 +5,8 @@
     "main": "plugin.js",
     "scripts": {
         "test": "node server.js",
-        "setup": "node setup.js"
+        "setup": "node setup.js",
+        "build": "node build.js"
     },
     "repository": {
         "type": "git",
@@ -27,5 +28,8 @@
     },
     "dependencies": {
         "mathjax": "^3.2.2"
+    },
+    "devDependencies": {
+        "terser": "^5.24.0"
     }
 }
